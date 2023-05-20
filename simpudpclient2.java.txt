@@ -1,0 +1,55 @@
+import java.io.FileOutputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+
+public class FileBackupServer {
+    public static void main(String[] args) {
+        int serverPort = 9876; // Replace with the server's port number
+        
+        try {
+            DatagramSocket serverSocket = new DatagramSocket(serverPort);
+            
+            System.out.println("Server is running. Waiting for file backup...");
+            
+            while (true) {
+                byte[] fileData = new byte[1024];
+                DatagramPacket packet = new DatagramPacket(fileData, fileData.length);
+                
+                serverSocket.receive(packet);
+                
+                byte[] receivedData = packet.getData();
+                
+                storeFileInDatabase(receivedData);
+                
+                System.out.println("File backup completed and stored in the database.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private static void storeFileInDatabase(byte[] fileData) throws Exception {
+        // Establish a database connection
+        Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/mydatabase", "username", "password");
+        
+        // Prepare the SQL statement
+        String sql = "INSERT INTO files (file_data) VALUES (?)";
+        PreparedStatement statement = connection.prepareStatement(sql);
+        
+        // Set the file data as a binary stream parameter
+        statement.setBinaryStream(1, new ByteArrayInputStream(fileData), fileData.length);
+        
+        // Execute the SQL statement
+        statement.executeUpdate();
+        
+        // Close the statement and database connection
+        statement.close();
+        connection.close();
+    }
+}

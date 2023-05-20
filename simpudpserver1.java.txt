@@ -1,0 +1,39 @@
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+
+public class WeatherServer {
+    public static void main(String[] args) {
+        try {
+            DatagramSocket serverSocket = new DatagramSocket(9876);
+            
+            System.out.println("Server is running. Waiting for requests...");
+            
+            while (true) {
+                byte[] requestData = new byte[1024];
+                DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length);
+                
+                serverSocket.receive(requestPacket);
+                
+                String requestMessage = new String(requestPacket.getData(), 0, requestPacket.getLength());
+                
+                String responseMessage = processWeatherRequest(requestMessage);
+                byte[] responseData = responseMessage.getBytes();
+                
+                InetAddress clientAddress = requestPacket.getAddress();
+                int clientPort = requestPacket.getPort();
+                
+                DatagramPacket responsePacket = new DatagramPacket(responseData, responseData.length, clientAddress, clientPort);
+                
+                serverSocket.send(responsePacket);
+                
+                System.out.println("Sent response to client: " + responseMessage);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private static String processWeatherRequest(String requestMessage) {
+        return "Weather: Sunny, Temperature: 25°C";
+    }
+}
